@@ -36,7 +36,7 @@ abstract public class ChannelHandler {
     public void channelRead(Channel channel, int input) {
     }
 
-    public Channel getChannel() {
+    public final Channel getChannel() {
         return channel;
     }
 
