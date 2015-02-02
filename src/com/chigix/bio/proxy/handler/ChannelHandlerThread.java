@@ -30,9 +30,15 @@ public class ChannelHandlerThread implements Runnable {
             try {
                 handler.channelRead(channel, (read = channel.getInputStream().read()));
             } catch (IOException ex) {
+                System.out.println(handler.getChannel().getRemoteHostAddress() + " DISCONNECTED");
                 break;
             }
             if (read == -1) {
+                System.out.println(handler.getChannel().getRemoteHostAddress() + " ENDED");
+                try {
+                    this.channel.flushBuffer();
+                } catch (IOException ex) {
+                }
                 break;
             }
         }
