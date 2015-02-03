@@ -54,7 +54,7 @@ public class ChigiProxy {
                 try {
                     bndSocket = new ServerSocket(8081);
                 } catch (IOException ex) {
-                    Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, "SOCKS 4a SERVER PORT ALREADY BE USED:8080", ex);
+                    Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, "SOCKS 4a SERVER PORT ALREADY BE USED:8081", ex);
                 }
                 while (true) {
                     Socket channelSocket = null;

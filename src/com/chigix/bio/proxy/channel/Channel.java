@@ -61,7 +61,7 @@ public class Channel {
     }
 
     public void pushToBuffer(byte[] data) throws SocketException {
-        List<Integer> copy = new LinkedList<>();
+        List<Integer> copy = new LinkedList<Integer>();
         for (int i = 0; i < data.length; i++) {
             copy.add(Byte.valueOf(data[i]).intValue());
         }

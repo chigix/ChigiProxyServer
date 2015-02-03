@@ -4,8 +4,10 @@ import com.chigix.bio.proxy.FormatDateTime;
 import com.chigix.bio.proxy.channel.Channel;
 import com.chigix.bio.proxy.utils.ReadBuffer;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
@@ -29,7 +31,7 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
 
     public Socks4aServerChannelHandler(Channel channel) {
         super(channel);
-        this.buffer = new ReadBuffer<>();
+        this.buffer = new ReadBuffer<Integer>();
         this.operation = Socks4aOperation.REQUEST_AUTH;
     }
 
@@ -70,6 +72,9 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
     @Override
     public void channelInactive(Channel channel) {
         System.out.println(FormatDateTime.toTimeString(new Date()) + " BROWSER INACTIVE " + this.dstHost + ":" + this.dstPort);
+        if (this.proxyChannel != null) {
+            this.proxyChannel.getChannel().close();
+        }
     }
 
     @Override
@@ -120,9 +125,9 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
         this.dstHost = host.toString();
         try {
             channel.pushToBuffer(0);
-            this.operation = Socks4aOperation.SEND_TO_PROXY_DIRECT;
+            this.operation = Socks4aOperation.NONE;
             System.out.println(FormatDateTime.toTimeString(new Date()) + " CONNECT TO DOMAIN: " + this.dstHost + ":" + this.dstPort);
-        } catch (IOException ex) {
+        } catch (SocketException ex) {
             Logger.getLogger(Socks4aServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
             channel.close();
             return;
@@ -145,8 +150,8 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
                 channel.flushBuffer();
             } catch (IOException ex1) {
                 channel.close();
-                return;
             }
+            return;
         } catch (ConnectException ex) {
             System.out.println(FormatDateTime.toTimeString(new Date()) + " CONNECT ERROR: " + this.dstHost + ":" + this.dstPort);
             try {
@@ -154,10 +159,11 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
                 channel.flushBuffer();
             } catch (IOException ex1) {
                 channel.close();
-                return;
             }
+            return;
         } catch (IOException ex) {
             Logger.getLogger(Socks4aServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
+            return;
         }
         try {
             channel.pushToBuffer(new byte[]{90, port_b1, port_b2});
@@ -198,6 +204,7 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
 
         };
         new Thread(new ChannelHandlerThread(proxyChannel)).start();
+        this.operation = Socks4aOperation.SEND_TO_PROXY_DIRECT;
     }
 
 }

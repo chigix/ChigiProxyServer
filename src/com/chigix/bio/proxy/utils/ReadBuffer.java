@@ -24,11 +24,11 @@ public class ReadBuffer<T> {
 
     public final void clear() {
         this.length = 0;
-        this.queue = new LinkedList<>();
+        this.queue = new LinkedList<T>();
     }
 
     public final List<T> toArrayCopy() {
-        return new ArrayList<>(this.queue);
+        return new ArrayList<T>(this.queue);
     }
 
 }
