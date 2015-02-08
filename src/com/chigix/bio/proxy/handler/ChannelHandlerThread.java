@@ -1,5 +1,6 @@
 package com.chigix.bio.proxy.handler;
 
+import com.chigix.bio.proxy.ChigiProxy;
 import com.chigix.bio.proxy.channel.Channel;
 import java.io.IOException;
 
@@ -19,12 +20,7 @@ public class ChannelHandlerThread implements Runnable {
 
     @Override
     public void run() {
-        new Thread() {
-            @Override
-            public void run() {
-                handler.channelActive(channel);
-            }
-        }.start();
+        handler.channelActive(channel);
         while (!this.channel.isClosed()) {
             int read = -1;
             try {

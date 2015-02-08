@@ -3,6 +3,7 @@ package com.chigix.bio.proxy;
 import com.chigix.bio.proxy.channel.Channel;
 import com.chigix.bio.proxy.handler.ChannelHandler;
 import com.chigix.bio.proxy.handler.ChannelHandlerThread;
+import com.chigix.bio.proxy.handler.HttpProxyServerChannelHandler;
 import com.chigix.bio.proxy.handler.Socks4aServerChannelHandler;
 import com.chigix.bio.proxy.handler.Socks5ServerChannelHandler;
 import java.io.IOException;
@@ -18,9 +19,18 @@ import java.util.logging.Logger;
  * @author Richard Lea <chigix@zoho.com>
  */
 public class ChigiProxy {
+    
+    private static ExecutorService THREAD_POOL = null;
+    
+    static{
+        ChigiProxy.THREAD_POOL = Executors.newCachedThreadPool();
+    }
+    
+    public static ExecutorService getThreadPool(){
+        return ChigiProxy.THREAD_POOL;
+    }
 
     public static void main(String[] args) {
-        final ExecutorService threadpool = Executors.newCachedThreadPool();
         new Thread() {
 
             @Override
@@ -41,11 +51,11 @@ public class ChigiProxy {
                     }
                     Channel channel = new Channel(channelSocket);
                     ChannelHandler handler = new Socks5ServerChannelHandler(channel);
-                    threadpool.execute(new ChannelHandlerThread(handler));
+                    ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(handler));
                 }
             }
 
-        }.start();
+        };
         new Thread() {
 
             @Override
@@ -66,7 +76,32 @@ public class ChigiProxy {
                     }
                     Channel channel = new Channel(channelSocket);
                     ChannelHandler handler = new Socks4aServerChannelHandler(channel);
-                    threadpool.execute(new ChannelHandlerThread(handler));
+                    ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(handler));
+                }
+            }
+
+        };
+        new Thread() {
+
+            @Override
+            public void run() {
+                ServerSocket bndSocket = null;
+                try {
+                    bndSocket = new ServerSocket(8083);
+                } catch (IOException ex) {
+                    Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, "HTTPPROXY SERVER PORT ALREADY BE USED:8081", ex);
+                }
+                while (true) {
+                    Socket channelSocket = null;
+                    try {
+                        channelSocket = bndSocket.accept();
+                    } catch (IOException ex) {
+                        Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, null, ex);
+                        continue;
+                    }
+                    Channel channel = new Channel(channelSocket);
+                    ChannelHandler handler = new HttpProxyServerChannelHandler(channel);
+                    ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(handler));
                 }
             }
 

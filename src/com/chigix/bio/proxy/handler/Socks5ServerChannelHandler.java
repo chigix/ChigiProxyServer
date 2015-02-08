@@ -1,5 +1,6 @@
 package com.chigix.bio.proxy.handler;
 
+import com.chigix.bio.proxy.ChigiProxy;
 import com.chigix.bio.proxy.FormatDateTime;
 import com.chigix.bio.proxy.channel.Channel;
 import java.io.IOException;
@@ -197,7 +198,7 @@ public class Socks5ServerChannelHandler extends ChannelHandler {
                 }
 
             };
-            new Thread(new ChannelHandlerThread(this.proxyServerChannel)).start();
+            ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(this.proxyServerChannel));
         } catch (UnknownHostException ex) {
             try {
                 this.sendReply(4, new byte[]{0, 0, 0, 0}, channel);
@@ -277,7 +278,7 @@ public class Socks5ServerChannelHandler extends ChannelHandler {
                 }
 
             };
-            new Thread(new ChannelHandlerThread(this.proxyServerChannel)).start();
+            ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(this.proxyServerChannel));
         } catch (UnknownHostException ex) {
             try {
                 this.sendReply(4, new byte[]{0, 0, 0, 0}, channel);

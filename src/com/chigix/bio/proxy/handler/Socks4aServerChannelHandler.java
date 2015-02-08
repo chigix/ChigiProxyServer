@@ -1,10 +1,10 @@
 package com.chigix.bio.proxy.handler;
 
+import com.chigix.bio.proxy.ChigiProxy;
 import com.chigix.bio.proxy.FormatDateTime;
 import com.chigix.bio.proxy.channel.Channel;
 import com.chigix.bio.proxy.utils.ReadBuffer;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -203,7 +203,7 @@ public class Socks4aServerChannelHandler extends ChannelHandler {
             }
 
         };
-        new Thread(new ChannelHandlerThread(proxyChannel)).start();
+        ChigiProxy.getThreadPool().execute(new ChannelHandlerThread(this.proxyChannel));
         this.operation = Socks4aOperation.SEND_TO_PROXY_DIRECT;
     }
 
