@@ -1,20 +1,26 @@
 package com.chigix.bio.proxy.handler;
 
 import com.chigix.bio.proxy.ChigiProxy;
+import com.chigix.bio.proxy.FormatDateTime;
 import com.chigix.bio.proxy.buffer.FixedBuffer;
 import com.chigix.bio.proxy.channel.Channel;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.http.Header;
+import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.impl.io.DefaultHttpRequestParser;
@@ -23,6 +29,7 @@ import org.apache.http.impl.io.HttpTransportMetricsImpl;
 import org.apache.http.impl.io.SessionInputBufferImpl;
 import org.apache.http.impl.io.SessionOutputBufferImpl;
 import org.apache.http.io.HttpMessageParser;
+import org.apache.http.message.BasicHttpRequest;
 
 /**
  *
@@ -36,6 +43,9 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
 
     private final FixedBuffer<Integer> delimiterCheck;
 
+    //@TODO: REMOVE
+    private final ByteArrayOutputStream debugHeaderBuffer;
+
     private boolean flag_sendBackDirect = false;
 
     private ChannelHandler proxyChannel = null;
@@ -45,6 +55,24 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
         this.buffer = new BufferInputStream();
         this.delimiterCheck = new FixedBuffer<Integer>(3);
         this.flag_sendBackDirect = false;
+        this.debugHeaderBuffer = new ByteArrayOutputStream();
+    }
+
+    public static URI uriParseUtil(String toParse) {
+        URI uri = null;
+        while (true) {
+            try {
+                uri = new URI(toParse);
+            } catch (URISyntaxException ex) {
+                try {
+                    toParse = toParse.substring(0, ex.getIndex()) + URLEncoder.encode(String.valueOf(toParse.charAt(ex.getIndex())), "utf-8") + toParse.substring(ex.getIndex() + 1);
+                } catch (UnsupportedEncodingException ex1) {
+                }
+                continue;
+            }
+            break;
+        }
+        return uri;
     }
 
     @Override
@@ -59,7 +87,7 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
             }
             return;
         }
-        System.out.print((char) input + " " + input + ",");
+        this.debugHeaderBuffer.write(input);
         this.buffer.push(input);
         this.delimiterCheck.offer(input);
         if (input == 10) {
@@ -67,6 +95,7 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
             if (currentCheck[0] == 10 || currentCheck[1] == 10) {
                 // HTTP Headers Closed.
                 System.out.println("PRE-PROXY HEADER CLOSED");
+                System.out.println(FormatDateTime.toTimeString(new Date()) + Arrays.toString(this.debugHeaderBuffer.toByteArray()));
                 this.buffer.end();
                 while (this.request == null) {
                     try {
@@ -74,7 +103,7 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
                     } catch (InterruptedException ex) {
                     }
                 }
-                System.out.println(this.request);
+                System.out.println(FormatDateTime.toTimeString(new Date()) + " " + this.request);
                 Socket proxySocket = null;
                 if (this.request.getRequestLine().getMethod().equalsIgnoreCase("connect")) {
                     Pattern p = Pattern.compile("^(.+):(\\d+)$");
@@ -84,36 +113,58 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
                     }
                     try {
                         proxySocket = new Socket(m.group(1), Integer.valueOf(m.group(2)));
+                    } catch (ConnectException ex) {
+                        try {
+                            channel.getOutputStream().write("HTTP/1.1 502 Bad Gateway\r\n\r\n".getBytes());
+                        } catch (IOException ex1) {
+                        }
                     } catch (IOException ex) {
-                        Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
-                        //channel.getOutputStream().write("HTTP/1.1 502 Bad Gateway\r\n\r\n".getBytes());
+                        Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, this.request.getRequestLine().getUri(), ex);
+                    } finally {
+                        channel.close();
                     }
                 } else {
-                    URI uri = null;
-                    try {
-                        uri = new URI(this.request.getRequestLine().getUri());
-                    } catch (URISyntaxException ex) {
-                        Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                    URI uri = uriParseUtil(this.request.getRequestLine().getUri());
                     try {
                         if (uri.getPort() == -1) {
                             proxySocket = new Socket(uri.getHost(), 80);
                         } else {
                             proxySocket = new Socket(uri.getHost(), uri.getPort());
                         }
+                    } catch (ConnectException ex) {
+                        try {
+                            channel.getOutputStream().write("HTTP/1.1 502 Bad Gateway\r\n\r\n".getBytes());
+                        } catch (IOException ex1) {
+                        } finally {
+                            channel.close();
+                        }
                     } catch (IOException ex) {
-                        Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
-                        //channel.getOutputStream().write("HTTP/1.1 502 Bad Gateway\r\n\r\n".getBytes());
+                        if (uri.getPort() == -1) {
+                            Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, uri.getHost() + ":80", ex);
+                        } else {
+                            Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, uri.getHost() + ":" + uri.getPort(), ex);
+                        }
+                    } finally {
+                        channel.close();
+                        return;
                     }
                 }
                 System.out.println(Arrays.toString(this.request.getHeaders("Host")));
-                String targetHost = null;
                 final Channel browserChannel = channel;
                 final String targetConnection = proxySocket.getInetAddress().getHostName() + ":" + proxySocket.getPort();
                 this.proxyChannel = new ChannelHandler(new Channel(proxySocket)) {
 
+                    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
                     @Override
                     public void channelRead(Channel channel, int input) {
+                        if (this.buffer != null) {
+                            this.buffer.write(input);
+                            if (input == 10) {
+                                System.out.println("[" + targetConnection + "]" + new String(this.buffer.toByteArray()));
+                                this.buffer = null;
+                            }
+                        }
                         try {
                             browserChannel.getOutputStream().write(input);
                         } catch (IOException ex) {
@@ -145,8 +196,25 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
                         } else {
                             SessionOutputBufferImpl buffer = new SessionOutputBufferImpl(new HttpTransportMetricsImpl(), 128);
                             buffer.bind(channel.getOutputStream());
+                            HttpRequest origRequest;
+                            URI origUri = uriParseUtil(request.getRequestLine().getUri());
+                            StringBuilder abs_path = new StringBuilder(origUri.getRawPath());
+                            if (origUri.getRawQuery() != null) {
+                                abs_path.append("?").append(origUri.getRawQuery());
+                            }
+                            origRequest = new BasicHttpRequest(request.getRequestLine().getMethod(), abs_path.toString(), request.getRequestLine().getProtocolVersion());
+                            origRequest.setHeaders(request.getAllHeaders());
+                            origRequest.removeHeaders("Proxy-Authenticate");
+                            origRequest.removeHeaders("Proxy-Authorization");
+                            origRequest.removeHeaders("Transfer-Encoding");
+                            origRequest.removeHeaders("Upgrade");
+                            if (!origRequest.containsHeader("Connection") && origRequest.containsHeader("Proxy-Connection")) {
+                                origRequest.setHeader("Connection", origRequest.getFirstHeader("Proxy-Connection").getValue());
+                            }
+                            origRequest.removeHeaders("Proxy-Connection");
+                            System.out.println("ORIG REQUEST:" + origRequest.toString());
                             try {
-                                new DefaultHttpRequestWriter(buffer).write(request);
+                                new DefaultHttpRequestWriter(buffer).write(origRequest);
                                 buffer.flush();
                                 System.out.println("REQUEST HEADER SENT: " + targetConnection);
                             } catch (IOException ex) {
@@ -188,7 +256,9 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
                 try {
                     System.out.println("PARSING");
                     request = parser.parse();
-                    System.out.println("PARSED" + request.toString());
+                    System.out.println(FormatDateTime.toTimeString(new Date()) + " PARSED " + request.toString());
+                } catch (ConnectionClosedException ex) {
+                    Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, Arrays.toString(debugHeaderBuffer.toByteArray()), ex);
                 } catch (IOException ex) {
                     Logger.getLogger(HttpProxyServerChannelHandler.class.getName()).log(Level.SEVERE, null, ex);
                     browserChannel.close();

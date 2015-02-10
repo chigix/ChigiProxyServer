@@ -1,6 +1,5 @@
 package com.chigix.bio.proxy.handler;
 
-import com.chigix.bio.proxy.ChigiProxy;
 import com.chigix.bio.proxy.channel.Channel;
 import java.io.IOException;
 
@@ -22,21 +21,21 @@ public class ChannelHandlerThread implements Runnable {
     public void run() {
         handler.channelActive(channel);
         while (!this.channel.isClosed()) {
-            int read = -1;
+            int read;
             try {
-                handler.channelRead(channel, (read = channel.getInputStream().read()));
+                if ((read = channel.getInputStream().read()) == -1) {
+                    System.out.println(handler.getChannel().getRemoteHostAddress() + " ENDED");
+                    try {
+                        this.channel.flushBuffer();
+                    } catch (IOException ex) {
+                    }
+                    break;
+                }
             } catch (IOException ex) {
                 System.out.println(handler.getChannel().getRemoteHostAddress() + " DISCONNECTED");
                 break;
             }
-            if (read == -1) {
-                System.out.println(handler.getChannel().getRemoteHostAddress() + " ENDED");
-                try {
-                    this.channel.flushBuffer();
-                } catch (IOException ex) {
-                }
-                break;
-            }
+            handler.channelRead(channel, read);
         }
         System.out.println("线程退出");
         this.handler.channelInactive(this.channel);
