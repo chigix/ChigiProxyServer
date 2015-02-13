@@ -3,7 +3,7 @@ package com.chigix.bio.proxy;
 import com.chigix.bio.proxy.channel.Channel;
 import com.chigix.bio.proxy.handler.ChannelHandler;
 import com.chigix.bio.proxy.handler.ChannelHandlerThread;
-import com.chigix.bio.proxy.handler.HttpProxyServerChannelHandler;
+import com.chigix.bio.proxy.handler.http.HttpProxyServerChannelHandler;
 import com.chigix.bio.proxy.handler.Socks4aServerChannelHandler;
 import com.chigix.bio.proxy.handler.Socks5ServerChannelHandler;
 import java.io.IOException;
@@ -19,14 +19,14 @@ import java.util.logging.Logger;
  * @author Richard Lea <chigix@zoho.com>
  */
 public class ChigiProxy {
-    
+
     private static ExecutorService THREAD_POOL = null;
-    
-    static{
+
+    static {
         ChigiProxy.THREAD_POOL = Executors.newCachedThreadPool();
     }
-    
-    public static ExecutorService getThreadPool(){
+
+    public static ExecutorService getThreadPool() {
         return ChigiProxy.THREAD_POOL;
     }
 
@@ -87,7 +87,7 @@ public class ChigiProxy {
             public void run() {
                 ServerSocket bndSocket = null;
                 try {
-                    bndSocket = new ServerSocket(8083);
+                    bndSocket = new ServerSocket(8084);
                 } catch (IOException ex) {
                     Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, "HTTPPROXY SERVER PORT ALREADY BE USED:8081", ex);
                 }

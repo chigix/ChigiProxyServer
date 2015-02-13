@@ -6,9 +6,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,10 +30,13 @@ public class Channel {
     private boolean isClosedFlag;
     private final ConcurrentLinkedQueue<Integer> writeBuffer;
 
+    private final Set<Tunnel> parentTunnels;
+
     public Channel(Socket socket) {
         this.isClosedFlag = false;
         this.socket = socket;
         this.writeBuffer = new ConcurrentLinkedQueue();
+        this.parentTunnels = new HashSet<Tunnel>();
         try {
             this.in = socket.getInputStream();
             this.out = socket.getOutputStream();
@@ -137,6 +143,14 @@ public class Channel {
 
     public String getRemoteHostAddress() {
         return this.socket.getInetAddress().getHostAddress();
+    }
+
+    public void registerTunnel(Tunnel tunnel) {
+        this.parentTunnels.add(tunnel);
+    }
+
+    public Tunnel[] getParentTunnels() {
+        return this.parentTunnels.toArray(new Tunnel[this.parentTunnels.size()]);
     }
 
 }
