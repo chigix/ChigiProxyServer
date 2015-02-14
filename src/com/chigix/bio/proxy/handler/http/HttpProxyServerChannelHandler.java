@@ -10,12 +10,10 @@ import com.chigix.bio.proxy.handler.ChannelHandlerThread;
 import com.chigix.bio.proxy.utils.BufferInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Date;
@@ -71,24 +69,14 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
      * @return
      * @throws com.chigix.bio.proxy.handler.http.InvalidRequestUriException
      */
-    public static URI uriParseUtil(String toParse) throws InvalidRequestUriException {
-        URI uri = null;
-        while (true) {
-            try {
-                uri = new URI(toParse);
-            } catch (URISyntaxException ex) {
-                try {
-                    toParse = toParse.substring(0, ex.getIndex()) + URLEncoder.encode(String.valueOf(toParse.charAt(ex.getIndex())), "utf-8") + toParse.substring(ex.getIndex() + 1);
-                } catch (UnsupportedEncodingException ex1) {
-                }
-                continue;
-            }
-            break;
+    public static URL uriParseUtil(String toParse) throws InvalidRequestUriException {
+        URL url = null;
+        try {
+            url = new URL(toParse);
+        } catch (MalformedURLException ex) {
+            throw new InvalidRequestUriException(toParse, ex.getMessage());
         }
-        if (uri.getScheme() == null || uri.getHost() == null) {
-            throw new InvalidRequestUriException(toParse, "Lack of Scheme or Host in uri.");
-        }
-        return uri;
+        return url;
     }
 
     @Override
@@ -174,7 +162,7 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
             }
             proxy_socket = new Socket(m.group(1), Integer.valueOf(m.group(2)));
         } else {
-            URI uri;
+            URL uri;
             uri = uriParseUtil(current_request.getRequestLine().getUri());
             if (uri.getPort() == -1) {
                 proxy_socket = new Socket(uri.getHost(), 80);
@@ -224,11 +212,11 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
     private void forwardHttpRequest(final HttpRequest request) throws HttpProxyException, IOException {
         final SessionOutputBufferImpl outputstream_buffer_to_proxy = new SessionOutputBufferImpl(new HttpTransportMetricsImpl(), 128);
         outputstream_buffer_to_proxy.bind(this.tunnel.getTargetHostChannel().getOutputStream());
-        URI origUri;
+        URL origUri;
         origUri = uriParseUtil(request.getRequestLine().getUri());
-        StringBuilder abs_path = new StringBuilder(origUri.getRawPath());
-        if (origUri.getRawQuery() != null) {
-            abs_path.append("?").append(origUri.getRawQuery());
+        StringBuilder abs_path = new StringBuilder(origUri.getPath());
+        if (origUri.getQuery() != null) {
+            abs_path.append("?").append(origUri.getQuery());
         }
         HttpRequest forward_request = new BasicHttpRequest(request.getRequestLine().getMethod(), abs_path.toString(), request.getRequestLine().getProtocolVersion());
         forward_request.setHeaders(request.getAllHeaders());

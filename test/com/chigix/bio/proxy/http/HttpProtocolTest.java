@@ -3,9 +3,11 @@ package com.chigix.bio.proxy.http;
 import com.chigix.bio.proxy.FormatDateTime;
 import com.chigix.bio.proxy.buffer.FixedBufferTest;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,6 +91,46 @@ public class HttpProtocolTest {
 
     @Test
     public void testParseUri() {
+        URL url;
+        try {
+            url = new URL("http://1234.b4rkdwu85w0caxjqfjzxafik.-1770237838.cmos.greencompute.org/?t=1423894286");
+            System.out.println(url.getHost());
+            System.out.println(url.toURI().getHost());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            url = new URL("http://zn_77ycxjaq1e0122vcbs.siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_ZID=ZN_77YCxjAq1e0122V&Q_LOC=http%3A%2F%2Fwww.cbsnews.com%2Fnews%2Fobama-recruits-tech-giants-apple-intel-reveals-new-cybersecurity-information-sharing-proposals%2F");
+            System.out.println(url.getHost());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            url = new URL("http://zn77ycxjaq1e0122vcbs.siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_ZID");
+            System.out.println(url.getHost());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            url = new URL("https://www.baidu.com");
+            System.out.println(url.getHost());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            System.out.println(url.getProtocol());
+            url = new URL("https://www.baidu.com/awsedf/asfef.jpg?asdf=aweff|fawevwaf");
+            System.out.println(url.getHost());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            System.out.println(url.getProtocol());
+            url = new URL("http://www.baidu.com:990/awsedf/asfef.jpg?asdf=aweff|fawevwaf");
+            System.out.println(url.getHost());
+            System.out.println(url.getPort());
+            System.out.println(url.getPath());
+            System.out.println(url.getQuery());
+            System.out.println(url.getProtocol());
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(HttpProtocolTest.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        } catch (URISyntaxException ex) {
+            Logger.getLogger(HttpProtocolTest.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
+        System.out.println("############################");
+        //http://1234.b4rkdwu85w0caxjqfjzxafik.-1770237838.cmos.greencompute.org/?t=1423894286
         String test_uri = "http://zn_77ycxjaq1e0122vcbs.siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_ZID=ZN_77YCxjAq1e0122V&Q_LOC=http%3A%2F%2Fwww.cbsnews.com%2Fnews%2Fobama-recruits-tech-giants-apple-intel-reveals-new-cybersecurity-information-sharing-proposals%2F";
         //test_uri = "http://zn77ycxjaq1e0122vcbs.siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_ZID";
         URI uri;
