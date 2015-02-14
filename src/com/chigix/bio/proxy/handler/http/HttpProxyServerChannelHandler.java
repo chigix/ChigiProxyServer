@@ -277,7 +277,6 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
                     this.operation = HttpProxyOperation.DISCARD;
                     return;
                 }
-                System.out.println("BANKAI:" + this.request);
                 if (this.request.getRequestLine().getMethod().equalsIgnoreCase("connect")) {
                     try {
                         channel.getOutputStream().write("HTTP/1.1 200 Tunnel established\r\n\r\n".getBytes());
