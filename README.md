@@ -1,2 +1,2 @@
 # ChigiProxyServer
-The Network sharer server support SOCKS5.
+The Network sharer server support SOCKS5, SOSKCS4a, HTTP Proxy.
