@@ -243,11 +243,9 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
         this.debugHeaderBuffer.write(input);
         this.buffer.push(input);
         this.delimiterCheck.offer(input);
-        //System.out.println(new String(this.debugHeaderBuffer.toByteArray()));
         if (input == 10) {
             Integer[] currentCheck = this.delimiterCheck.toArray(new Integer[3]);
             if (currentCheck[0] == 10 || currentCheck[1] == 10) {
-                System.out.println("HEADER RECEIVED");
                 // HTTP Headers Closed.
                 this.buffer.end();
                 try {
@@ -308,14 +306,13 @@ public class HttpProxyServerChannelHandler extends ChannelHandler {
 
     @Override
     public void channelInactive(Channel channel) {
-        System.out.println("BROWSER CLOSED SELFLY");
-        System.out.println(channel.getRemoteHostAddress() + "断开");
+        System.out.println(channel.getRemoteHostAddress() + " Browser Closed Selfly");
         this.tunnel.close();
     }
 
     @Override
     public void channelActive(Channel channel) {
-        System.out.println(channel.getRemoteHostAddress() + "连入");
+        System.out.println(channel.getRemoteHostAddress() + " Browser Connected");
         this.operation = HttpProxyOperation.WAIT_FOR_HEADER_PARSE;
         this.request = new BasicHttpRequest("TEST", "/");
     }

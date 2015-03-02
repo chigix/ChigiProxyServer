@@ -55,7 +55,7 @@ public class ChigiProxy {
                 }
             }
 
-        };
+        }.start();
         new Thread() {
 
             @Override
@@ -80,14 +80,14 @@ public class ChigiProxy {
                 }
             }
 
-        };
+        }.start();
         new Thread() {
 
             @Override
             public void run() {
                 ServerSocket bndSocket = null;
                 try {
-                    bndSocket = new ServerSocket(8084);
+                    bndSocket = new ServerSocket(8082);
                 } catch (IOException ex) {
                     Logger.getLogger(ChigiProxy.class.getName()).log(Level.SEVERE, "HTTPPROXY SERVER PORT ALREADY BE USED:8081", ex);
                 }
