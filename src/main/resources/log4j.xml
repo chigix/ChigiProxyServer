@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file is part of the ChigiProxyTunnel package.
+
+(c) Richard Lea <chigix@zoho.com>
+
+For the full copyright and license information, please view the LICENSE
+file that was distributed with this source code.
+-->
+<Configuration>
+    <Appenders>
+        <Console name="Console">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %highlight{%-5level} %logger{36} - %highlight{%msg}%n%throwable"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="trace">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+ 
